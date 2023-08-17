@@ -1,11 +1,8 @@
 import { RemovalPolicy, Stack, StackProps, App } from 'aws-cdk-lib';
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { LambdaRestApi } from 'aws-cdk-lib/aws-apigateway';
 
 interface MyCdkStackProps extends StackProps {
   stackName: 'blue' | 'green'
@@ -24,25 +21,27 @@ export class FirstCdkAppStack extends Stack {
       }
     )
 
-    //define lambda function and refeference function file
+    //define lambda function and reference function file
     const lambda_backend = new NodejsFunction(this, "function", {
       tracing: lambda.Tracing.ACTIVE,
       environment: {
         DYNAMODB: dynamodb_table.tableName
       },
+      runtime: lambda.Runtime.NODEJS_14_X
     })
-    
+
     //define lambda function to add item
     const add_item_lambda_backend = new NodejsFunction(this, "add-item", {
       tracing: lambda.Tracing.ACTIVE,
       environment: {
         DYNAMODB: dynamodb_table.tableName
       },
+      runtime: lambda.Runtime.NODEJS_14_X
     })
 
     //grant lambda function read access to dynamodb table
     dynamodb_table.grantReadData(lambda_backend.role!)
-    
+
     //grant lambda function write access to dynamodb table
     dynamodb_table.grantWriteData(add_item_lambda_backend.role!)
 
@@ -55,10 +54,10 @@ export class FirstCdkAppStack extends Stack {
     })
 
     //define endpoint and associate it with lambda backend
-    const endpoint = api.root.addResource("scan")
-    const addItemEndpoint = api.root.addResource("add")
-    const endpointMethod = endpoint.addMethod("GET", new apigateway.LambdaIntegration(lambda_backend))
-    const addItemEndpointMethod = endpointMethod.addMethod("PUT", new apigateway.LambdaIntegration(add_item_lambda_backend))
+    const scanEndpoint = api.root.addResource("scan")
+    const scanEndpointMethod = scanEndpoint.addMethod("GET", new apigateway.LambdaIntegration(lambda_backend))
 
+    const addItemEndpoint = api.root.addResource("add")
+    const addItemEndpointMethod = addItemEndpoint.addMethod("PUT", new apigateway.LambdaIntegration(add_item_lambda_backend))
   }
 }
